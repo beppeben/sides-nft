@@ -17,6 +17,9 @@ pub contract SidesNFT: NonFungibleToken {
     // Total number of NFTs in circulation
     pub var totalSupply: UInt64
 
+    // Dictionary used to check whether wallets have exceeded the mint limit
+    access(contract) var walletToMintsCheck: {Address: UInt32}
+
     // COLLECTION CONFIGURATIONS
     pub let configs: CollectionConfigs
 
@@ -237,6 +240,7 @@ pub contract SidesNFT: NonFungibleToken {
             if level == 0 && SidesNFT.stats.totalLevel0Minted >= SidesNFT.configs.maxLevel0Supply {
                 panic("Exceeded maximum available supply.")
             }
+
             // create a new NFT
             let id = SidesNFT.stats.totalGrossSupply
             let thumbnail = self.selectImageForMintUp(fromNFTs: &fromNFTs as &[NFT], level: level, id: id)
@@ -444,7 +448,12 @@ pub contract SidesNFT: NonFungibleToken {
 
     // Mint Level 0 NFTs
     pub fun mintLevel0(flowVault: @FlowToken.Vault, num: UInt32, address: Address) {
-        if num > self.configs.maxLevel0mintPerWallet {
+        if SidesNFT.walletToMintsCheck[address] == nil {
+            SidesNFT.walletToMintsCheck[address] = num
+        } else {
+            SidesNFT.walletToMintsCheck[address] = SidesNFT.walletToMintsCheck[address]! + num
+        }
+        if SidesNFT.walletToMintsCheck[address]! > self.configs.maxLevel0mintPerWallet {
             panic("You're not allowed to mint more than ".concat(self.configs.maxLevel0mintPerWallet.toString()))
         }
         if flowVault.balance != UFix64(num) * self.configs.level0Price {
@@ -510,10 +519,10 @@ pub contract SidesNFT: NonFungibleToken {
         self.totalSupply = 0        
 
         // Initialize collection configs
-        let level0DateLimit = 1678055744.0  // corresponds to March 5th 2023
+        let level0DateLimit = 1678899600.0  // corresponds to March 15th 2023
         let level0Price = 1.0
-        let maxLevel0mintPerWallet = UInt32(5)
-        let maxLevel0Supply = UInt64(100)
+        let maxLevel0mintPerWallet = UInt32(10)
+        let maxLevel0Supply = UInt64(1000)
         let numEvolve = UInt32(3)
         let tokenAddress = self.account.address
         // list of images for each level, to be assigned randomly on mint
@@ -532,6 +541,7 @@ pub contract SidesNFT: NonFungibleToken {
         // Initialize minter and stats
         self.minter <- create NFTMinter()
         self.stats = Stats()
+        self.walletToMintsCheck = {}
         
         emit ContractInitialized()
     }
