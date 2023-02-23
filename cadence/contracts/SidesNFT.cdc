@@ -189,7 +189,9 @@ pub contract SidesNFT: NonFungibleToken {
         // The current implementation simply randomizes using a seed based on the ids of the burnt NFTs
         // Alternative implementations could insert here a different logic to possibly make the new NFT
         // depend on the characteristics of the burned NFTs that have been used to mint it
-        pub fun selectImageForMintUp(fromNFTs: &[NFT], level: UInt32, id: UInt64): String {
+        // Or use the collector's address (last argument) to check his holdings and use some NFTs
+        // to decide what image they get, or to boost the probability of getting a rarer one
+        pub fun selectImageForMintUp(fromNFTs: &[NFT], level: UInt32, id: UInt64, address: Address): String {
             let len = fromNFTs.length
             var i = 0
             var seed = UInt64(0)
@@ -202,14 +204,14 @@ pub contract SidesNFT: NonFungibleToken {
         }
 
         // Logic to select the image of the newly downgraded NFT
-        pub fun selectImageForMintDown(fromNFT: &NFT, level: UInt32, id: UInt64): String {
+        pub fun selectImageForMintDown(fromNFT: &NFT, level: UInt32, id: UInt64, address: Address): String {
             let img = SidesNFT.configs.levelsToImgs[level]![id % UInt64(SidesNFT.configs.levelsToImgs[level]!.length)]
             return img
         }
    
 
         // Mints a new NFT or evolves from existing ones
-        pub fun mintUp(fromNFTs: @[NFT]) : @NFT {
+        pub fun mintUp(fromNFTs: @[NFT], address: Address) : @NFT {
             
             let len = fromNFTs.length
             let currLevel = Int(len == 0? -1 : fromNFTs[0].level)
@@ -243,7 +245,7 @@ pub contract SidesNFT: NonFungibleToken {
 
             // create a new NFT
             let id = SidesNFT.stats.totalGrossSupply
-            let thumbnail = self.selectImageForMintUp(fromNFTs: &fromNFTs as &[NFT], level: level, id: id)
+            let thumbnail = self.selectImageForMintUp(fromNFTs: &fromNFTs as &[NFT], level: level, id: id, address: address)
             var newNFT <- create NFT(initID: id, level: level, thumbnail: thumbnail)
             
             // update collection stats
@@ -256,7 +258,7 @@ pub contract SidesNFT: NonFungibleToken {
         }
 
         // Downgrades an NFT into a set of NFTs of the preceding level
-        pub fun mintDown(fromNFT: @NFT) : @[NFT] {
+        pub fun mintDown(fromNFT: @NFT, address: Address) : @[NFT] {
             if SidesNFT.configs.downgradePenalty == nil {
                 panic("The collection doesn't support downgrading an NFT.")
             }
@@ -269,8 +271,8 @@ pub contract SidesNFT: NonFungibleToken {
             var res: @[NFT] <- []
             while UInt32(i) < SidesNFT.configs.numEvolve - SidesNFT.configs.downgradePenalty! {
                 // create a new NFT
-                let id = SidesNFT.stats.totalGrossSupply
-                let thumbnail = self.selectImageForMintDown(fromNFT: &fromNFT as &NFT, level: newLevel, id: id)
+                let id = SidesNFT.stats.totalGrossSupply + UInt64(i)
+                let thumbnail = self.selectImageForMintDown(fromNFT: &fromNFT as &NFT, level: newLevel, id: id, address: address)
                 var newNFT <- create NFT(initID: id, level: newLevel, thumbnail: thumbnail)
                 res.append(<-newNFT)
                 i = i + 1
@@ -473,7 +475,7 @@ pub contract SidesNFT: NonFungibleToken {
 
         var counter = UInt32(0)
         while counter < num {
-            let nft <- self.minter.mintUp(fromNFTs: <-[])
+            let nft <- self.minter.mintUp(fromNFTs: <-[], address: address)
             NFTrec.deposit(token: <-nft)
             counter = counter + UInt32(1)
         }
@@ -485,7 +487,7 @@ pub contract SidesNFT: NonFungibleToken {
             panic("Not enough assets to burn for the evolution.")
         }
         // mint and send NFTs
-        let nft <- self.minter.mintUp(fromNFTs: <-fromNFTs)
+        let nft <- self.minter.mintUp(fromNFTs: <-fromNFTs, address: address)
         let NFTrec = getAccount(address).getCapability(SidesNFT.CollectionPublicPath)
                     .borrow<&{SidesNFT.CollectionPublic}>()
                     ?? panic("Could not get receiver reference to the NFT Collection")
@@ -494,7 +496,7 @@ pub contract SidesNFT: NonFungibleToken {
 
     // Downgrade NFT into NFTs of the previous level
     pub fun downgradeNFTs(fromNFT: @NFT, address: Address) {
-        let nfts <- self.minter.mintDown(fromNFT: <- fromNFT)
+        let nfts <- self.minter.mintDown(fromNFT: <- fromNFT, address: address)
 
         let NFTrec = getAccount(address).getCapability(SidesNFT.CollectionPublicPath)
                     .borrow<&{SidesNFT.CollectionPublic}>()

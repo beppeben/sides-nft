@@ -79,6 +79,10 @@ describe("sidesnft", ()=>{
     var [tx, error] = await sendTransaction("mint_level_0", [bob], [6, 6.0]);
     expect(error).not.toBeNull();
 
+    // Verify that Bob holds the minted NFTs
+    var [result,error] = await executeScript("read_collection", [bob]);
+    expect(result.length).toEqual(5);
+
     // Verify collection stats
     var [result,error] = await executeScript("read_stats", []);
     expect(result).toEqual(
@@ -97,6 +101,10 @@ describe("sidesnft", ()=>{
     // Evolve 3 Level-0 to a Level-1
     var [tx, error] = await sendTransaction("evolve", [bob], [1]);
     expect(error).toBeNull();
+
+    // Verify that Bob's collection has changed
+    var [result,error] = await executeScript("read_collection", [bob]);
+    expect(result.length).toEqual(3);
 
     // Try to do it again (should result in an error as we only have 2 Level-0 left)
     var [tx, error] = await sendTransaction("evolve", [bob], [1]);
@@ -117,7 +125,7 @@ describe("sidesnft", ()=>{
     var [result,error] = await executeScript("read_supply", []);
     expect(result).toEqual(7)
 
-    // Downgrade one NFT of level 1
+    // Downgrade one NFT of level 1 for 2 Level-0
     var [tx, error] = await sendTransaction("downgrade", [bob], [0]);
     expect(error).toBeNull();
 
@@ -129,8 +137,12 @@ describe("sidesnft", ()=>{
       totalGrossSupply: 12,
       totalLevel0Minted: 9,
       maxMintableLevel: 2,
-      lastMintedImage: 'img_0_1'
+      lastMintedImage: 'img_0_2'
     })
+
+    // Verify that Bob's collection has changed
+    var [result,error] = await executeScript("read_collection", [bob]);
+    expect(result.length).toEqual(4);
 
     // Verify total supply
     var [result,error] = await executeScript("read_supply", []);
