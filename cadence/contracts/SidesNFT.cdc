@@ -512,11 +512,18 @@ pub contract SidesNFT: NonFungibleToken {
         destroy nfts    // the array is empty at this point
     }
 
+    // Get number of Level-0 NFTs left to mint for a particular wallet
+    pub fun getLevel0LeftToMint(address: Address): UInt32{
+        let minted = self.walletToMintsCheck[address] != nil? self.walletToMintsCheck[address]! : UInt32(0)
+        return self.configs.maxLevel0mintPerWallet - minted
+    }
+
+
     // INITIALIZATION
     init() {
         // Set named paths
-        self.CollectionStoragePath = /storage/SidesNFTCollection1
-        self.CollectionPublicPath = /public/SidesNFTCollection1
+        self.CollectionStoragePath = /storage/SidesNFTCollection2
+        self.CollectionPublicPath = /public/SidesNFTCollection2
 
         self.totalSupply = 0        
 
