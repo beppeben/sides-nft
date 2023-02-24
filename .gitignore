@@ -1,2 +1,4 @@
 /cadence/test/node_modules
 /cadence/flow.json
+/frontend/node_modules
+/frontend/.next
