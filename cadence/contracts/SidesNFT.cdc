@@ -323,6 +323,7 @@ pub contract SidesNFT: NonFungibleToken {
                     return MetadataViews.Display(
                         name: self.name,
                         description: self.description,
+                        // replace the URL with the path where images will be stored
                         thumbnail: MetadataViews.HTTPFile(
                             url: "URL/".concat(self.thumbnail).concat(".png")
                         )
@@ -535,6 +536,8 @@ pub contract SidesNFT: NonFungibleToken {
         let tokenAddress = self.account.address
         // list of images for each level, to be assigned randomly on mint
         // just repeat the same image name many times if you want it to be relatively more common
+        // These could either be interpreted as URL HTTP paths or CID for IPFS 
+        // (to be defined within the Metadata Display section)
         let levelsToImgs = {
             UInt32(0): ["img_0_0", "img_0_1", "img_0_2"], 
             UInt32(1): ["img_1_0", "img_1_1", "img_1_2"], 
