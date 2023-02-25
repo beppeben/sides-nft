@@ -67,7 +67,7 @@ pub contract SidesNFT: NonFungibleToken {
         // You need to burn numEvolve Level n NFTs to get 1 Level (n+1) NFT
         pub let numEvolve: UInt32
 
-        // Map of supported levels to the (IPFS) images to be randomly assigned to newly minted NFTs
+        // Map of supported levels to the images to be assigned to newly minted NFTs
         access(contract) let levelsToImgs: {UInt32: [String]}
 
         // Maximum rarity level deduced from the levelsToImgs configuration map
@@ -118,7 +118,7 @@ pub contract SidesNFT: NonFungibleToken {
         // Last image that has been minted (can be shown on the website)
         pub var lastMintedImage: String
 
-        // Integer logarithm
+        // Integer logarithm for computing the max mintable level
         pub fun IntegerLog(base: UInt32, num: UInt64): UInt32 {
             var res = 0
             var test = base
@@ -209,7 +209,6 @@ pub contract SidesNFT: NonFungibleToken {
             return img
         }
    
-
         // Mints a new NFT or evolves from existing ones
         pub fun mintUp(fromNFTs: @[NFT], address: Address) : @NFT {
             
@@ -240,7 +239,7 @@ pub contract SidesNFT: NonFungibleToken {
                 panic("You've already reached the maximum supported rarity, cannot upgrade further.")
             }
             if level == 0 && SidesNFT.stats.totalLevel0Minted >= SidesNFT.configs.maxLevel0Supply {
-                panic("Exceeded maximum available supply.")
+                panic("Exceeded maximum available Level-0 supply.")
             }
 
             // create a new NFT
