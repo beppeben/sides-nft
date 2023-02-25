@@ -18,6 +18,13 @@ function MyApp({ Component, pageProps }) {
           <span className="subHeader"><small>Flow Hackathon 2023</small></span>
         </li>
       </ul>
+      <ul>
+        <li>
+          <Link href="/about">
+            <a>About</a>
+          </Link>
+        </li>
+      </ul>
     </nav>
     <main className="container">
       <Component {...pageProps} />
